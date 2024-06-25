@@ -1,91 +1,130 @@
-class Game:
-    def __init__(self):
-        pass
+import math
 
-    def is_terminal(self, state):
-        # Implement this method to check if the game has reached a terminal state
-        pass
 
-    def get_possible_moves(self, state, player):
-        # Implement this method to get all possible moves for the current player
-        pass
-
-    def make_move(self, state, move, player):
-        # Implement this method to apply a move and return the new state
-        pass
-
-    def evaluate(self, state):
-        # Implement this method to evaluate the given state
-        pass
-
-def alpha_beta_pruning(game, state, depth, alpha, beta, maximizing_player):
-    if depth == 0 or game.is_terminal(state):
-        return game.evaluate(state)
-
-    if maximizing_player:
-        max_eval = float('-inf')
-        for move in game.get_possible_moves(state, True):
-            new_state = game.make_move(state, move, True)
-            eval = alpha_beta_pruning(game, new_state, depth-1, alpha, beta, False)
-            max_eval = max(max_eval, eval)
-            alpha = max(alpha, eval)
-            if beta <= alpha:
-                break
-        return max_eval
+def evaluate(board):
+    # Example evaluation function for Tic-Tac-Toe
+    # Returns +1 if the maximizer (X) wins, -1 if the minimizer (O) wins, 0 for a draw
+    # You would need to customize this for different games and board states
+    if check_winner(board, 'X'):
+        return 1
+    elif check_winner(board, 'O'):
+        return -1
     else:
-        min_eval = float('inf')
-        for move in game.get_possible_moves(state, False):
-            new_state = game.make_move(state, move, False)
-            eval = alpha_beta_pruning(game, new_state, depth-1, alpha, beta, True)
-            min_eval = min(min_eval, eval)
-            beta = min(beta, eval)
-            if beta <= alpha:
-                break
-        return min_eval
-
-# Example usage (tic-tac-toe, chess, etc.)
-class TicTacToe(Game):
-    def __init__(self):
-        self.board = [' ' for _ in range(9)]
-
-    def is_terminal(self, state):
-        # Define terminal condition: win or draw
-        win_conditions = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8],
-            [0, 3, 6], [1, 4, 7], [2, 5, 8],
-            [0, 4, 8], [2, 4, 6]
-        ]
-        for condition in win_conditions:
-            if state[condition[0]] == state[condition[1]] == state[condition[2]] != ' ':
-                return True
-        return ' ' not in state
-
-    def get_possible_moves(self, state, player):
-        # Return all empty positions
-        return [i for i, cell in enumerate(state) if cell == ' ']
-
-    def make_move(self, state, move, player):
-        new_state = state[:]
-        new_state[move] = 'X' if player else 'O'
-        return new_state
-
-    def evaluate(self, state):
-        # Evaluation logic: +1 for X win, -1 for O win, 0 for draw
-        win_conditions = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8],
-            [0, 3, 6], [1, 4, 7], [2, 5, 8],
-            [0, 4, 8], [2, 4, 6]
-        ]
-        for condition in win_conditions:
-            if state[condition[0]] == state[condition[1]] == state[condition[2]] != ' ':
-                return 1 if state[condition[0]] == 'X' else -1
         return 0
 
-# Example usage
-game = TicTacToe()
-initial_state = game.board
-depth = 9  # maximum depth for tic-tac-toe
-maximizing_player = True
 
-best_score = alpha_beta_pruning(game, initial_state, depth, float('-inf'), float('inf'), maximizing_player)
-print("Best score for the starting player (X):", best_score)
+def check_winner(board, player):
+    # Check rows, columns, and diagonals for a win
+    # Assume board is represented as a 3x3 list
+    win_conditions = [
+        [board[0][0], board[0][1], board[0][2]],
+        [board[1][0], board[1][1], board[1][2]],
+        [board[2][0], board[2][1], board[2][2]],
+        [board[0][0], board[1][0], board[2][0]],
+        [board[0][1], board[1][1], board[2][1]],
+        [board[0][2], board[1][2], board[2][2]],
+        [board[0][0], board[1][1], board[2][2]],
+        [board[0][2], board[1][1], board[2][0]]
+    ]
+
+    for condition in win_conditions:
+        if all(cell == player for cell in condition):
+            return True
+    return False
+
+
+def is_terminal(board):
+    # Check if the board is in a terminal state (win or draw)
+    return check_winner(board, 'X') or check_winner(board, 'O') or all(
+        all(cell != '-' for cell in row) for row in board)
+
+
+def minimax_alpha_beta(board, depth, alpha, beta, maximizingPlayer):
+    if depth == 0 or is_terminal(board):
+        return evaluate(board)
+
+    if maximizingPlayer:
+        maxEval = -math.inf
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == '-':
+                    board[i][j] = 'X'
+                    eval = minimax_alpha_beta(board, depth - 1, alpha, beta, False)
+                    board[i][j] = '-'
+                    maxEval = max(maxEval, eval)
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break
+        return maxEval
+    else:
+        minEval = math.inf
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == '-':
+                    board[i][j] = 'O'
+                    eval = minimax_alpha_beta(board, depth - 1, alpha, beta, True)
+                    board[i][j] = '-'
+                    minEval = min(minEval, eval)
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break
+        return minEval
+
+
+def find_best_move(board):
+    bestVal = -math.inf
+    bestMove = None
+    alpha = -math.inf
+    beta = math.inf
+
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == '-':
+                board[i][j] = 'X'
+                moveVal = minimax_alpha_beta(board, 3, alpha, beta, False)
+                board[i][j] = '-'
+
+                if moveVal > bestVal:
+                    bestVal = moveVal
+                    bestMove = (i, j)
+
+    return bestMove
+
+
+def print_board(board):
+    for row in board:
+        print(" ".join(row))
+    print()
+
+
+# Function to initialize the board based on user input
+def initialize_board():
+    print("Enter the initial state of the board:")
+    board = [['-' for _ in range(3)] for _ in range(3)]
+    for i in range(3):
+        for j in range(3):
+            while True:
+                user_input = input(f"Enter value for board[{i}][{j}] ('X', 'O', or '-'): ").strip().upper()
+                if user_input in ['X', 'O', '-']:
+                    board[i][j] = user_input
+                    break
+                else:
+                    print("Invalid input! Please enter 'X', 'O', or '-'")
+    return board
+
+
+# Example usage where user provides initial state and shows the best move for 'X'
+def main():
+    # Initialize the board based on user input
+    board = initialize_board()
+
+    print("\nInitial Board:")
+    print_board(board)
+
+    # Find and print the best move for 'X' using the minimax algorithm with alpha-beta pruning
+    best_move = find_best_move(board)
+    print("Best move for 'X':", best_move)
+
+
+if __name__ == "__main__":
+    main()
